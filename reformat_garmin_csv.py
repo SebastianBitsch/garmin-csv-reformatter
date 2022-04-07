@@ -3,7 +3,7 @@ import pandas as pd
 
 # Prompt to show users when help arg is given, or when they pass an invalid input
 def prompt_input_format():
-  print('reformat_garmin_csv.py -i <inputfile:str> -o <outputfile:str> -f <european-format:bool>')
+  print('reformat_garmin_csv.py -i <inputpath> -o <outputpath> -f <european-format:bool>')
 
 
 # Get the paths to the input and output files from the arguments passed in the terminal
@@ -77,14 +77,20 @@ if __name__=="__main__":
 		if col in df.columns:
 			cast_col(df, col, int)
 
+	if 'enhanced_altitude' in df.columns:
+		cast_col(df, 'enhanced_altitude', float)
+		df['enhanced_altitude'] = df['enhanced_altitude'].apply(lambda x: round(x, 1))
+
 	# Reformat from garmins semicircle format to a normal longitude latitude format.
 	# For more info on semicircle coordinate unit see: https://gis.stackexchange.com/questions/156887/conversion-between-semicircles-and-latitude-units
 	max_int = 2**31 
 	if 'position_lat' in df.columns:
 		df['position_lat'] = df['position_lat'].apply(lambda x: x * (180 / max_int))
+		full_colnames[df.columns.get_loc('position_lat')] = 'position_lat [degrees]'
 
 	if 'position_long' in df.columns:
 		df['position_long'] = df['position_long'].apply(lambda x: x * (180 / max_int))
+		full_colnames[df.columns.get_loc('position_long')] = 'position_long [degrees]'
 
 	# Reformat timescale from unix to be time from activity start, e.g. 0, 1, ..  
 	if 'timestamp' in df.columns:
@@ -100,5 +106,5 @@ if __name__=="__main__":
 	df.columns = full_colnames
 
 	# Write df to csv
-	df.to_csv(opath, sep=sep, decimal=decimal, index=False)
+	df.to_csv(opath, index=False,header=True, sep=sep,decimal=decimal)
 
